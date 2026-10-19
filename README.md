@@ -1,20 +1,16 @@
-# Rare class resolution: balanced LightGBM vs random forest (Yeast stand-in)
+# Rare-class classification on OpenML Yeast (stand-in for DNSViz error logs)
 
-Question: can a class-balanced, CV-tuned, isotonic-calibrated LightGBM beat a default
-random forest on test macro-F1 for rare classes?
+Question: can a class-balanced, cross-validation-tuned ensemble beat a default random forest on test macro-F1?
 
-Dataset: OpenML Yeast (id 181), used as a stand-in for DNSViz error logs (not public).
+Method:
+- Stratified 80/20 split with seed 42. The test split is never used for tuning.
+- Improved model: soft-voting ensemble of a class-balanced LightGBM (hyperparameters chosen by 5-fold stratified CV macro-F1 on the training split) and a class-balanced random forest. The mixing weight is chosen by out-of-fold CV on the training split. No isotonic calibration.
+- Baseline: default scikit-learn RandomForestClassifier.
+- Both models are scored once per seed (42, 43, 44) on the test split. Results are in `results.json`; the chart is in `figures/macro_f1.png`.
 
-Method (unchanged): one stratified 80/20 split with seed 42; LightGBM grid
-(learning rate, num_leaves, reg_lambda) tuned by 5-fold stratified CV on the training
-split only; isotonic calibration; both models scored once per seed on the test split
-over seeds 42, 43, 44.
+Run: `pip install -r requirements.txt && python analysis.py`
 
-Run: `python analysis.py` (writes `results.json` and `figures/macro_f1.png`).
-
-Fix note: data loading now goes through the openml package's ARFF parser instead of
-`scipy.io.arff.loadarff` on raw bytes, which fails on recent SciPy. The dataset, split,
-models and metrics are unchanged.
+Caveat: Yeast is a stand-in, so the results do not transfer directly to DNSSEC. The rarest class has very few examples, so rare-class recall is noisy.
 
 ## Reference
 
