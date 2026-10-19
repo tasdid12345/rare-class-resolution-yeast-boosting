@@ -1,7 +1,6 @@
 """Can a class-balanced, CV-tuned, calibrated LightGBM beat a default random forest
 on macro-F1 for rare classes? Stand-in data: OpenML Yeast (id 181).
 All tuning uses CV on the training split; the test split is used once per model per seed."""
-import io
 import json
 import os
 import sys
@@ -14,8 +13,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import openml
 import pandas as pd
-import requests
-from scipy.io import arff
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, log_loss, recall_score
@@ -42,31 +39,20 @@ def retry(fn, tries=5):
             time.sleep(2 ** i)
 
 
-def http_get(url):
-    """Download bytes with a 60 s timeout; 429/5xx raise so retry() backs off."""
-    r = requests.get(url, timeout=60)
-    if r.status_code == 429 or r.status_code >= 500:
-        raise RuntimeError(f"HTTP {r.status_code}")
-    r.raise_for_status()
-    return r.content
-
-
 def load_data():
-    """Fetch OpenML metadata and ARFF file; return features, encoded target, row count."""
-    print("Fetching dataset metadata from OpenML...")
-    meta = retry(lambda: openml.datasets.get_dataset(DATASET_ID, download_data=False))
-    print("Downloading ARFF file...")
-    raw = retry(lambda: http_get(meta.url))
-    data, _ = arff.loadarff(io.BytesIO(raw))
-    df = pd.DataFrame(data)
-    for c in df.columns:  # nominal columns are returned as bytes
-        if df[c].dtype == object:
-            df[c] = df[c].str.decode("utf-8")
+    """Fetch the OpenML dataset as a pandas DataFrame (openml handles ARFF parsing);
+    return features, encoded target, row count."""
+    print("Fetching dataset from OpenML...")
+    meta = retry(lambda: openml.datasets.get_dataset(DATASET_ID, download_data=True))
+    target = meta.default_target_attribute
+    X_df, y_s, _, _ = retry(
+        lambda: meta.get_data(dataset_format="dataframe", target=target))
+    df = X_df.copy()
+    df[target] = y_s.values
     if len(df) > MAX_ROWS:
         df = df.sample(MAX_ROWS, random_state=SEED)
-    target = meta.default_target_attribute
     X = df.drop(columns=[target]).astype(float).values
-    y = LabelEncoder().fit_transform(df[target])
+    y = LabelEncoder().fit_transform(df[target].astype(str))
     return X, y, len(df)
 
 
@@ -178,7 +164,8 @@ def main():
                   f"recall is noisy. Seeds vary model randomness only, not the split. "
                   f"Tuning used CV on the training split only; the test split was scored once "
                   f"per model per seed. Argmax of calibrated probabilities is used for "
-                  f"prediction."),
+                  f"prediction. Data loading uses openml's ARFF parser because scipy.io.arff "
+                  f"in recent SciPy versions fails on bytes input."),
     }
     with open("results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)

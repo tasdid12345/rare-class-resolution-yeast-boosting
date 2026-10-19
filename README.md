@@ -1,25 +1,20 @@
-# Rare-class error prediction: balanced LightGBM vs random forest
+# Rare class resolution: balanced LightGBM vs random forest (Yeast stand-in)
 
-Motivation: DNSSEC misconfigurations are diagnosed from DNSViz error logs, where most error categories are rare and a classifier that ignores them is of little use. The paper "Decoding DNSSEC Errors at Scale: An Automated DNSSEC Error Resolution Framework using Insights from DNSViz Logs" proposes automated error resolution from such logs. This experiment asks a narrower question about the modelling step.
+Question: can a class-balanced, CV-tuned, isotonic-calibrated LightGBM beat a default
+random forest on test macro-F1 for rare classes?
 
-Question: Can a class-balanced, cross-validation-tuned LightGBM classifier beat a standard random forest on macro-F1 for predicting rare error categories in a small imbalanced tabular dataset?
+Dataset: OpenML Yeast (id 181), used as a stand-in for DNSViz error logs (not public).
 
-Dataset: the public OpenML Yeast dataset (id 181), fetched with the `openml` Python package. It is a stand-in for the DNSViz error logs, which are not public. It is not the paper's own dataset.
+Method (unchanged): one stratified 80/20 split with seed 42; LightGBM grid
+(learning rate, num_leaves, reg_lambda) tuned by 5-fold stratified CV on the training
+split only; isotonic calibration; both models scored once per seed on the test split
+over seeds 42, 43, 44.
 
-Baseline: a default scikit-learn `RandomForestClassifier`. This is not the paper's method.
+Run: `python analysis.py` (writes `results.json` and `figures/macro_f1.png`).
 
-Improved model: LightGBM with balanced class weights, a small grid over learning rate, leaves and L2 regularisation chosen by stratified cross-validation on the training split, and isotonic-calibrated probabilities.
-
-Evaluation: one stratified hold-out split with a fixed seed. Macro-F1 on the test split is the main metric; rare-class recall and log-loss are secondary. Randomized models are run over three seeds.
-
-## How to run
-
-```
-pip install -r requirements.txt
-python analysis.py
-```
-
-Results: written to `results.json` (and `figures/macro_f1.png`).
+Fix note: data loading now goes through the openml package's ARFF parser instead of
+`scipy.io.arff.loadarff` on raw bytes, which fails on recent SciPy. The dataset, split,
+models and metrics are unchanged.
 
 ## Reference
 
