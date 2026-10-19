@@ -12,6 +12,28 @@ Run: `pip install -r requirements.txt && python analysis.py`
 
 Caveat: Yeast is a stand-in, so the results do not transfer directly to DNSSEC. The rarest class has very few examples, so rare-class recall is noisy.
 
+## Results (latest run)
+
+On the OpenML Yeast stand-in, macro-F1 on the test split was 0.514 for a standard random forest and 0.597 for the class-balanced ensemble (three seeds, one split), though the CV-chosen LightGBM weight was 0.
+
+| Metric | Value |
+|---|---|
+| baseline_score | 0.5144 |
+| improved_score | 0.5972 |
+| improvement | 0.08277 |
+| baseline_score_std | 0.0673 |
+| improved_score_std | 0.005147 |
+| baseline_rare_recall | 0.3333 |
+| improved_rare_recall | 1 |
+| baseline_logloss | 1.695 |
+| improved_logloss | 1.283 |
+| n_seeds | 3 |
+| cv_lgb_weight | 0 |
+
+Run on 2026-10-19. Full output: [results.json](results.json) · [run.log](run.log)
+
+Notes: Yeast is a stand-in: the DNSViz logs are not public, so results do not transfer directly to DNSSEC. Single stratified split with fixed seed; the rarest class has 4 training examples, so rare-class recall is noisy. Seeds vary model randomness only, not the split. Tuning and weight selection used CV on the training split only; the test split was scored once per model per seed. Isotonic calibration was dropped because with very few rare-class examples it suppressed rare-class predictions. Data loading uses openml's ARFF parser because scipy.io.arff in recent SciPy versions fails on bytes input.
+
 ## Reference
 
 This project is motivated by the following paper:
