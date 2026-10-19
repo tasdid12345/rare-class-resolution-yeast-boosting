@@ -1,0 +1,30 @@
+{
+  "question": "Can a class-balanced, cross-validation-tuned LightGBM classifier beat a standard random forest on macro-F1 for predicting rare error categories in a small imbalanced tabular dataset?",
+  "method": "Stratified 80/20 split (fixed seed); grid over learning rate, leaves and L2 regularisation chosen by stratified CV on the training split; isotonic-calibrated probabilities; test macro-F1 for both models over three seeds.",
+  "dataset": {
+    "name": "OpenML Yeast (id 181), stand-in for DNSViz error logs",
+    "source_url": "https://www.openml.org/d/181",
+    "n_rows": 1484,
+    "n_train": 1187,
+    "n_test": 297,
+    "same_as_paper": false,
+    "baseline_is_papers_method": false
+  },
+  "metric_name": "macro-F1 (test)",
+  "higher_is_better": true,
+  "baseline": "Default scikit-learn RandomForestClassifier (random_state=seed, all other defaults).",
+  "improved": "LightGBM with class_weight='balanced'; learning_rate, num_leaves and reg_lambda chosen by 5-fold stratified CV macro-F1 on the training split; isotonic-calibrated probabilities (internal 3-fold CV).",
+  "metrics": {
+    "baseline_score": 0.514446248887182,
+    "improved_score": 0.4220435755488133,
+    "improvement": -0.09240267333836877,
+    "baseline_score_std": 0.06729737965307983,
+    "improved_score_std": 0.0,
+    "baseline_rare_recall": 0.3333333333333333,
+    "improved_rare_recall": 0.0,
+    "baseline_logloss": 1.6952334627200385,
+    "improved_logloss": 1.0795828138612662,
+    "n_seeds": 3
+  },
+  "notes": "Yeast is a stand-in: the DNSViz logs are not public, so results do not transfer directly to DNSSEC. Single stratified split with fixed seed; the rarest class has 4 training examples, so rare-class recall is noisy. Seeds vary model randomness only, not the split. Tuning used CV on the training split only; the test split was scored once per model per seed. Argmax of calibrated probabilities is used for prediction. Data loading uses openml's ARFF parser because scipy.io.arff in recent SciPy versions fails on bytes input."
+}
