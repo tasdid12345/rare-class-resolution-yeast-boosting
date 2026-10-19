@@ -1,0 +1,31 @@
+{
+  "question": "Can a class-balanced, cross-validation-tuned ensemble of LightGBM and a balanced random forest beat a standard random forest on macro-F1 for predicting rare error categories in a small imbalanced tabular dataset?",
+  "method": "Stratified 80/20 split (fixed seed); LightGBM grid over learning rate, leaves, L2 regularisation and min_child_samples chosen by stratified 5-fold CV on the training split; the ensemble weight between LightGBM and a class-balanced random forest chosen by out-of-fold CV on the training split; test macro-F1 for both models over three seeds.",
+  "dataset": {
+    "name": "OpenML Yeast (id 181), stand-in for DNSViz error logs",
+    "source_url": "https://www.openml.org/d/181",
+    "n_rows": 1484,
+    "n_train": 1187,
+    "n_test": 297,
+    "same_as_paper": false,
+    "baseline_is_papers_method": false
+  },
+  "metric_name": "macro-F1 (test)",
+  "higher_is_better": true,
+  "baseline": "Default scikit-learn RandomForestClassifier (random_state=seed, all other defaults).",
+  "improved": "Soft-voting ensemble of class-balanced LightGBM (hyperparameters chosen by 5-fold stratified CV macro-F1 on the training split) and a class-balanced random forest (balanced_subsample, 300 trees); mixing weight chosen by out-of-fold CV on the training split. No post-hoc probability calibration.",
+  "metrics": {
+    "baseline_score": 0.514446248887182,
+    "improved_score": 0.597220116318134,
+    "improvement": 0.08277386743095194,
+    "baseline_score_std": 0.06729737965307983,
+    "improved_score_std": 0.0051465789182459434,
+    "baseline_rare_recall": 0.3333333333333333,
+    "improved_rare_recall": 1.0,
+    "baseline_logloss": 1.6952334627200385,
+    "improved_logloss": 1.2829836301204678,
+    "n_seeds": 3,
+    "cv_lgb_weight": 0.0
+  },
+  "notes": "Yeast is a stand-in: the DNSViz logs are not public, so results do not transfer directly to DNSSEC. Single stratified split with fixed seed; the rarest class has 4 training examples, so rare-class recall is noisy. Seeds vary model randomness only, not the split. Tuning and weight selection used CV on the training split only; the test split was scored once per model per seed. Isotonic calibration was dropped because with very few rare-class examples it suppressed rare-class predictions. Data loading uses openml's ARFF parser because scipy.io.arff in recent SciPy versions fails on bytes input."
+}
